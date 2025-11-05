@@ -1,0 +1,259 @@
+.dashboard-page {
+  min-height: 100vh;
+  background: #fafbfc;
+}
+
+.main-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Welcome Section */
+.welcome-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white;
+  padding: 3rem;
+  border-radius: 12px;
+  margin-bottom: 3rem;
+}
+
+.welcome-content {
+  flex: 1;
+}
+
+.welcome-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+}
+
+.welcome-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin: 0;
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+.user-info {
+  text-align: right;
+}
+
+.greeting {
+  font-size: 1.1rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+/* Actions Grid */
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.action-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.primary-card {
+  border-left: 4px solid #3b82f6;
+}
+
+.secondary-card {
+  border-left: 4px solid #10b981;
+}
+
+.tertiary-card {
+  border-left: 4px solid #f59e0b;
+}
+
+.card-icon {
+  margin-bottom: 1.5rem;
+}
+
+.icon-presentation,
+.icon-improve,
+.icon-projects {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+}
+
+.icon-presentation {
+  background: #3b82f6;
+}
+
+.icon-presentation::before {
+  content: "P";
+}
+
+.icon-improve {
+  background: #10b981;
+}
+
+.icon-improve::before {
+  content: "I";
+}
+
+.icon-projects {
+  background: #f59e0b;
+}
+
+.icon-projects::before {
+  content: "M";
+}
+
+.card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+}
+
+.card-description {
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 2rem 0;
+  flex: 1;
+}
+
+.card-actions {
+  margin-top: auto;
+}
+
+.action-button {
+  width: 100%;
+}
+
+/* Stats Section */
+.stats-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2rem 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Activity Section */
+.activity-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.activity-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2rem 0;
+}
+
+.empty-activity {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.empty-icon {
+  margin-bottom: 1.5rem;
+}
+
+.icon-empty {
+  width: 64px;
+  height: 64px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 24px;
+}
+
+.icon-empty::before {
+  content: "◯";
+}
+
+.empty-message {
+  color: #64748b;
+  margin: 0 0 2rem 0;
+  font-size: 1.1rem;
+}
+
+/* Responsive adjustments for larger screens */
+@media (min-width: 1200px) {
+  .actions-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

@@ -1,0 +1,72 @@
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.card--bordered {
+  border: 1px solid #e9ecef;
+}
+
+.card--hoverable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Padding variants */
+.card--padding-none {
+  padding: 0;
+}
+
+.card--padding-small {
+  padding: 12px;
+}
+
+.card--padding-medium {
+  padding: 20px;
+}
+
+.card--padding-large {
+  padding: 32px;
+}
+
+.card-header {
+  padding: 20px 20px 0 20px;
+  border-bottom: 1px solid #e9ecef;
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.card-body {
+  padding: 0 20px;
+  flex: 1;
+}
+
+.card-footer {
+  padding: 20px 20px 20px 20px;
+  border-top: 1px solid #e9ecef;
+  margin-top: 20px;
+  background-color: #f8f9fa;
+}
+
+/* When card has no custom padding, apply default to sections */
+.card:not([class*="card--padding"]) .card-header,
+.card:not([class*="card--padding"]) .card-body,
+.card:not([class*="card--padding"]) .card-footer {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.card:not([class*="card--padding"]) .card-header {
+  padding-top: 20px;
+  padding-bottom: 0;
+}
+
+.card:not([class*="card--padding"]) .card-footer {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
