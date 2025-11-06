@@ -36,3 +36,20 @@ class TokenResponse(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+
+
+# Import additional schemas
+from app.schemas.template import (
+    TemplateSuggestionRequest,
+    TemplateSuggestionResponse,
+    TemplateComponent,
+)
+
+from app.schemas.slide_content import (
+    SlideClassificationRequest,
+    SlideClassificationResponse,
+    ContentElement,
+    SlideContentGenerationRequest,
+    SlideContentGenerationResponse,
+    SlideComponents,
+)

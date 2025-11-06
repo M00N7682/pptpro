@@ -1,13 +1,15 @@
-# API Endpoints
+# API Design (Backend Specification)
 
-## 1) 스토리라인 생성
+---
+
+# 1) 스토리라인 생성 API
 POST /api/storyline/generate
 body:
 {
-  "topic": "...",
-  "target": "...",
-  "goal": "...",
-  "narrative_style": "consulting"
+  "topic": "string",
+  "target": "string",
+  "goal": "string",
+  "story": "string"
 }
 response:
 {
@@ -15,26 +17,72 @@ response:
   "head_messages": [...]
 }
 
-## 2) 템플릿 추천
+---
+
+# 2) 템플릿 추천 API
 POST /api/template/suggest
 body:
 {
-  "head_message": "...",
-  "slide_purpose": "problem_statement"
+  "slide_purpose": "string",
+  "head_message": "string"
 }
 response:
 {
-  "template_type": "asis_tobe",
-  "example_structure": [...]
+  "template_type": "message_only | asis_tobe | case_box | node_map | step_flow | chart_insight",
+  "components": [...]
 }
 
-## 3) PPT 생성
+---
+
+# 3) 슬라이드 분류 API (USER_NEEDED / AI_GENERATED)
+POST /api/slide/classify
+body:
+{
+  "slide_text": "string",
+  "slide_type": "string"
+}
+response:
+{
+  "user_needed": [...],
+  "ai_generated": [...]
+}
+
+---
+
+# 4) 슬라이드 콘텐츠 생성 API
+POST /api/slide/generate
+body:
+{
+  "slide_type": "string",
+  "ai_generated": [...],
+  "context": {...}
+}
+response:
+{
+  "components": {
+     "title": "string",
+     "sub_message": "string",
+     "bullet_points": [...],
+     "diagram": "...",
+     "insight_box": "...",
+     "action_guide": "...",
+     "caption": "..."
+  }
+}
+
+---
+
+# 5) PPT 생성 API
 POST /api/ppt/render
 body:
 {
   "slides": [
-     { "template": "case_box", "content": {...} }
+    {
+      "template": "string",
+      "components": {...}
+    }
   ]
 }
 response:
-file_stream (pptx)
+file_stream (.pptx)
+

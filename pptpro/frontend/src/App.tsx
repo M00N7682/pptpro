@@ -7,6 +7,9 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProjectsPage from './pages/ProjectsPage';
 import StorylinePage from './pages/StorylinePage';
+import TemplateSelectionPage from './pages/TemplateSelectionPage';
+import SlideEditPage from './pages/SlideEditPage';
+import PPTPreviewPage from './pages/PPTPreviewPage';
 import SlideContentEditPage from './pages/SlideContentEditPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 
@@ -61,6 +64,46 @@ function App() {
             element={
               <ProtectedRoute>
                 <StorylinePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/template-selection"
+            element={
+              <ProtectedRoute>
+                <TemplateSelectionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/slide-edit"
+            element={
+              <ProtectedRoute>
+                <SlideEditPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ppt-preview"
+            element={
+              <ProtectedRoute>
+                <PPTPreviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/slides/:slideId/edit"
+            element={
+              <ProtectedRoute>
+                <SlideContentEditPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId"
+            element={
+              <ProtectedRoute>
+                <ProjectDetailPage />
               </ProtectedRoute>
             }
           />

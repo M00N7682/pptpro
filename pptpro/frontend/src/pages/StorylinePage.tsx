@@ -68,8 +68,18 @@ const StorylinePage: React.FC = () => {
       };
       const newResult = await storylineApi.generateStoryline(newRequest);
       setResult(newResult);
-      if (newResult.project_id) {
-        navigate(`/projects/${newResult.project_id}`);
+      if (newResult.project_id && newResult.outline) {
+        // 스토리라인 생성 완료 후 템플릿 선택 페이지로 이동
+        navigate('/template-selection', {
+          state: {
+            slides: newResult.outline.map((item: any) => ({
+              order: item.order,
+              head_message: item.head_message,
+              slide_purpose: item.purpose,
+            })),
+            projectId: newResult.project_id,
+          },
+        });
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || '프로젝트 생성 중 오류가 발생했습니다');
