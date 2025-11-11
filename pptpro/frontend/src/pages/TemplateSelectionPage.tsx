@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { templateApi } from '../api/template';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { Button, LoadingSpinner, ProgressSteps, useToast } from '../components/ui';
 import './TemplateSelectionPage.css';
 
 interface SlideData {
@@ -70,6 +70,7 @@ const AVAILABLE_TEMPLATES: TemplateInfo[] = [
 const TemplateSelectionPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const slides: SlideData[] = location.state?.slides || [];
   const projectId: string = location.state?.projectId || '';
 
@@ -80,6 +81,13 @@ const TemplateSelectionPage: React.FC = () => {
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
 
   const currentSlide = slides[currentSlideIndex];
+
+  const workflowSteps = [
+    { label: 'Storyline', description: 'Create structure' },
+    { label: 'Templates', description: 'Select design' },
+    { label: 'Content', description: 'Edit slides' },
+    { label: 'Export', description: 'Download PPT' },
+  ];
 
   // AI 추천 받기
   const getAiSuggestion = async () => {
@@ -94,9 +102,10 @@ const TemplateSelectionPage: React.FC = () => {
         head_message: currentSlide.head_message,
       });
       setAiSuggestion(result);
+      toast.success('AI recommendation received!');
     } catch (error) {
       console.error('AI 템플릿 추천 실패:', error);
-      alert('AI 추천을 가져오는데 실패했습니다.');
+      toast.error('Failed to get AI recommendation. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -108,12 +117,13 @@ const TemplateSelectionPage: React.FC = () => {
       ...selectedTemplates,
       [currentSlideIndex]: templateType,
     });
+    toast.success('Template selected!');
   };
 
   // 다음 슬라이드로
   const handleNext = () => {
     if (!selectedTemplates[currentSlideIndex]) {
-      alert('템플릿을 선택해주세요.');
+      toast.warning('Please select a template first.');
       return;
     }
 
@@ -143,20 +153,25 @@ const TemplateSelectionPage: React.FC = () => {
       template_type: selectedTemplates[index],
     }));
 
-    navigate('/slide-edit', {
-      state: {
-        slides: slidesWithTemplates,
-        projectId,
-      },
-    });
+    toast.success('All templates selected! Moving to content editing...');
+    setTimeout(() => {
+      navigate('/slide-edit', {
+        state: {
+          slides: slidesWithTemplates,
+          projectId,
+        },
+      });
+    }, 800);
   };
 
   if (slides.length === 0) {
     return (
       <div className="template-selection-page">
         <div className="error-message">
-          <p>슬라이드 정보가 없습니다. 스토리라인 생성부터 시작해주세요.</p>
-          <button onClick={() => navigate('/storyline')}>스토리라인 생성하기</button>
+          <p>No slide data found. Please start from storyline generation.</p>
+          <Button variant="primary" onClick={() => navigate('/storyline')}>
+            Go to Storyline Generator
+          </Button>
         </div>
       </div>
     );
@@ -165,10 +180,20 @@ const TemplateSelectionPage: React.FC = () => {
   return (
     <div className="template-selection-page">
       <div className="template-header">
-        <h1>템플릿 선택</h1>
-        <p>각 슬라이드에 가장 적합한 템플릿을 선택하세요</p>
+        <div className="header-content">
+          <h1>Template Selection</h1>
+          <p>Select the most suitable template for each slide</p>
+        </div>
+        <ProgressSteps 
+          steps={workflowSteps}
+          currentStep={2}
+          completedSteps={[1]}
+        />
         <div className="progress-indicator">
-          슬라이드 {currentSlideIndex + 1} / {slides.length}
+          Slide {currentSlideIndex + 1} of {slides.length} 
+          <span className="completed-count">
+            ({Object.keys(selectedTemplates).length} completed)
+          </span>
         </div>
       </div>
 

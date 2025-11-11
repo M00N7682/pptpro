@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storylineApi } from '../api/storyline';
-import { Button, LoadingSpinner } from '../components/ui';
+import { Button, LoadingSpinner, ProgressSteps, ConfirmDialog, useToast } from '../components/ui';
 import type { StorylineRequest, StorylineResult } from '../api/storyline';
 import './StorylinePage.css';
 
+const DRAFT_STORAGE_KEY = 'pptpro-storyline-draft';
+
 const StorylinePage: React.FC = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
   const [result, setResult] = useState<StorylineResult | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   const [formData, setFormData] = useState<StorylineRequest>({
     topic: '',
@@ -19,6 +22,28 @@ const StorylinePage: React.FC = () => {
     create_project: false,
     project_title: ''
   });
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        setFormData(parsed);
+        toast.info('Draft recovered from your previous session');
+      } catch (e) {
+        console.error('Failed to parse saved draft:', e);
+      }
+    }
+  }, []);
+
+  // Auto-save draft to localStorage
+  useEffect(() => {
+    const hasContent = formData.topic || formData.target || formData.goal;
+    if (hasContent) {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(formData));
+    }
+  }, [formData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -32,13 +57,15 @@ const StorylinePage: React.FC = () => {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
     
     try {
       const result = await storylineApi.generateStoryline(formData);
       setResult(result);
+      toast.success('Storyline generated successfully!');
     } catch (err: any) {
-      setError(err.response?.data?.detail || '스토리라인 생성 중 오류가 발생했습니다');
+      const errorMessage = err.response?.data?.detail || 'Failed to generate storyline. Please try again.';
+      toast.error(errorMessage);
+      console.error('Storyline generation error:', err);
     } finally {
       setLoading(false);
     }
@@ -54,59 +81,104 @@ const StorylinePage: React.FC = () => {
       project_title: ''
     });
     setResult(null);
-    setError('');
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    setShowResetConfirm(false);
+    toast.info('Form reset successfully');
+  };
+
+  const handleResetClick = () => {
+    const hasContent = formData.topic || formData.target || formData.goal || result;
+    if (hasContent) {
+      setShowResetConfirm(true);
+    } else {
+      handleReset();
+    }
   };
 
   const handleCreateProject = async () => {
     setLoading(true);
-    setError('');
     try {
       const newRequest: StorylineRequest = {
         ...formData,
         create_project: true,
-        project_title: formData.project_title || `${formData.topic} 프로젝트`
+        project_title: formData.project_title || `${formData.topic} Project`
       };
       const newResult = await storylineApi.generateStoryline(newRequest);
       setResult(newResult);
+      
       if (newResult.project_id && newResult.outline) {
-        // 스토리라인 생성 완료 후 템플릿 선택 페이지로 이동
-        navigate('/template-selection', {
-          state: {
-            slides: newResult.outline.map((item: any) => ({
-              order: item.order,
-              head_message: item.head_message,
-              slide_purpose: item.purpose,
-            })),
-            projectId: newResult.project_id,
-          },
-        });
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+        toast.success('Project created! Moving to template selection...');
+        
+        // Navigate to template selection page
+        setTimeout(() => {
+          navigate('/template-selection', {
+            state: {
+              slides: newResult.outline.map((item: any) => ({
+                order: item.order,
+                head_message: item.head_message,
+                slide_purpose: item.purpose,
+              })),
+              projectId: newResult.project_id,
+            },
+          });
+        }, 800);
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || '프로젝트 생성 중 오류가 발생했습니다');
+      const errorMessage = err.response?.data?.detail || 'Failed to create project. Please try again.';
+      toast.error(errorMessage);
+      console.error('Project creation error:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const workflowSteps = [
+    { label: 'Storyline', description: 'Create structure' },
+    { label: 'Templates', description: 'Select design' },
+    { label: 'Content', description: 'Edit slides' },
+    { label: 'Export', description: 'Download PPT' },
+  ];
+
   return (
     <div className="storyline-page">
+      <ConfirmDialog
+        isOpen={showResetConfirm}
+        title="Reset Form?"
+        message="This will clear all your inputs and the generated storyline. This action cannot be undone."
+        confirmText="Reset"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        onConfirm={handleReset}
+        onCancel={() => setShowResetConfirm(false)}
+      />
+      
       <div className="main-content">
         {/* Header */}
         <div className="page-header">
-          <Button
-            onClick={() => navigate('/dashboard')}
-            variant="ghost"
-            size="small"
-            className="back-button"
-          >
-            ← Dashboard
-          </Button>
-          <div className="header-content">
-            <h1 className="page-title">AI Storyline Generator</h1>
-            <p className="page-subtitle">
-              Define your presentation topic, target audience, and goals to generate a structured, 
-              compelling presentation outline powered by AI.
-            </p>
+          <div className="header-top">
+            <Button
+              onClick={() => navigate('/dashboard')}
+              variant="ghost"
+              size="small"
+              className="back-button"
+            >
+              ← Dashboard
+            </Button>
+            <div className="header-content">
+              <h1 className="page-title">AI Storyline Generator</h1>
+              <p className="page-subtitle">
+                Define your presentation topic, target audience, and goals to generate a structured, 
+                compelling presentation outline powered by AI.
+              </p>
+            </div>
+          </div>
+          <div className="progress-container">
+            <ProgressSteps 
+              steps={workflowSteps}
+              currentStep={1}
+              completedSteps={[]}
+            />
           </div>
         </div>
 
@@ -206,12 +278,6 @@ const StorylinePage: React.FC = () => {
                     </div>
                   )}
 
-                  {error && (
-                    <div className="error-message">
-                      {error}
-                    </div>
-                  )}
-
                   <div className="form-actions">
                     <Button
                       type="submit"
@@ -221,14 +287,15 @@ const StorylinePage: React.FC = () => {
                       size="large"
                       className="generate-button"
                     >
-                      Generate Storyline
+                      {loading ? 'Generating...' : 'Generate Storyline'}
                     </Button>
                     
                     <Button
                       type="button"
-                      onClick={handleReset}
+                      onClick={handleResetClick}
                       variant="ghost"
                       size="large"
+                      disabled={loading}
                     >
                       Reset
                     </Button>
@@ -289,9 +356,10 @@ const StorylinePage: React.FC = () => {
                     {/* Action Buttons */}
                     <div className="result-actions">
                       <Button
-                        onClick={handleReset}
+                        onClick={handleResetClick}
                         variant="secondary"
                         size="large"
+                        disabled={loading}
                       >
                         Generate New
                       </Button>
@@ -304,13 +372,16 @@ const StorylinePage: React.FC = () => {
                           variant="success"
                           size="large"
                         >
-                          Create Project
+                          {loading ? 'Creating Project...' : 'Create Project & Continue'}
                         </Button>
                       )}
 
                       {result.project_id && (
                         <Button
-                          onClick={() => navigate(`/projects/${result.project_id}`)}
+                          onClick={() => {
+                            toast.success('Opening project...');
+                            navigate(`/projects/${result.project_id}`);
+                          }}
                           variant="primary"
                           size="large"
                         >

@@ -1,0 +1,123 @@
+/* Progress Steps Styles */
+
+.progress-steps {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.progress-steps__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.progress-steps__step-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+
+.progress-steps__step {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 3px solid #e2e8f0;
+  transition: all 0.3s;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.progress-steps__step--completed {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-color: #10b981;
+}
+
+.progress-steps__step--current {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white;
+  border-color: #3b82f6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}
+
+.progress-steps__line {
+  flex: 1;
+  height: 3px;
+  background: #e2e8f0;
+  margin-left: 0.5rem;
+  transition: all 0.3s;
+}
+
+.progress-steps__line--completed {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.progress-steps__content {
+  text-align: center;
+  width: 100%;
+}
+
+.progress-steps__label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+  transition: all 0.3s;
+}
+
+.progress-steps__label--current {
+  color: #1e40af;
+  font-size: 1rem;
+}
+
+.progress-steps__description {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .progress-steps {
+    padding: 1.5rem 1rem;
+  }
+
+  .progress-steps__step {
+    width: 40px;
+    height: 40px;
+    font-size: 0.95rem;
+  }
+
+  .progress-steps__label {
+    font-size: 0.85rem;
+  }
+
+  .progress-steps__description {
+    font-size: 0.75rem;
+  }
+}

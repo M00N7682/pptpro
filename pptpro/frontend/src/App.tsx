@@ -16,6 +16,7 @@ import ProjectDetailPage from './pages/ProjectDetailPage';
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
 import NavBar from './components/NavBar';
+import { ToastProvider } from './components/ui';
 
 // Styles
 import './App.css';
@@ -25,9 +26,10 @@ function App() {
 
   return (
     <Router>
-      <div className="App">
-        <NavBar />
-        <Routes>
+      <ToastProvider>
+        <div className="App">
+          <NavBar />
+          <Routes>
           {/* Public Routes */}
           <Route 
             path="/login" 
@@ -136,6 +138,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+    </ToastProvider>
     </Router>
   );
 }
