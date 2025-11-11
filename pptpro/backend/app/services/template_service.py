@@ -3,7 +3,7 @@ Template suggestion service using LLM
 """
 import json
 from typing import Dict, Any, List
-from app.infrastructure.llm_provider import LLMProvider
+from app.infrastructure.llm_provider import get_llm_provider
 from app.schemas.template import (
     TemplateSuggestionRequest,
     TemplateSuggestionResponse,
@@ -15,7 +15,7 @@ class TemplateService:
     """템플릿 추천 서비스"""
     
     def __init__(self):
-        self.llm = LLMProvider()
+        self.llm = get_llm_provider()
         self.template_descriptions = {
             "message_only": "메시지 중심 장표. 핵심 메시지만 강조하고 시각적 요소는 최소화. 임팩트 있는 문구 전달에 적합.",
             "asis_tobe": "현재 상태(As-Is)와 목표 상태(To-Be)를 비교하는 장표. 변화나 개선점을 시각적으로 대비.",
@@ -35,14 +35,15 @@ class TemplateService:
         
         prompt = self._build_suggestion_prompt(request)
         
-        response = await self.llm.generate(
-            system_prompt=self._get_system_prompt(),
-            user_prompt=prompt,
+        prompt_text = f"{self._get_system_prompt()}\n\n{prompt}"
+
+        llm_response = await self.llm.generate(
+            prompt=prompt_text,
             temperature=0.3,  # 일관된 추천을 위해 낮은 temperature
         )
         
         # LLM 응답 파싱
-        result = self._parse_llm_response(response)
+        result = self._parse_llm_response(llm_response.content if hasattr(llm_response, "content") else llm_response)
         
         return TemplateSuggestionResponse(**result)
     
