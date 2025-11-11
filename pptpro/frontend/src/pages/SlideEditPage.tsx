@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { slidesApi } from '../api/slides';
 import { slideContentApi } from '../api/slideContent';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { Button, LoadingSpinner, ProgressSteps, useToast } from '../components/ui';
 import './SlideEditPage.css';
 
 interface SlideData {
@@ -26,6 +26,7 @@ interface SlideWithContent extends SlideData {
 const SlideEditPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const slides: SlideData[] = location.state?.slides || [];
   const projectId: string = location.state?.projectId || '';
 
@@ -36,6 +37,13 @@ const SlideEditPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const currentSlide = slidesWithContent[currentSlideIndex] || slides[currentSlideIndex];
+
+  const workflowSteps = [
+    { label: 'Storyline', description: 'Create structure' },
+    { label: 'Templates', description: 'Select design' },
+    { label: 'Content', description: 'Edit slides' },
+    { label: 'Export', description: 'Download PPT' },
+  ];
 
   useEffect(() => {
     // 초기화: slides를 slidesWithContent로 변환
@@ -62,9 +70,10 @@ const SlideEditPage: React.FC = () => {
       }
       
       setSlidesWithContent(createdSlides);
+      toast.success(`${createdSlides.length} slides created successfully!`);
     } catch (error) {
       console.error('슬라이드 생성 실패:', error);
-      alert('슬라이드를 생성하는데 실패했습니다.');
+      toast.error('Failed to create slides. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -89,9 +98,10 @@ const SlideEditPage: React.FC = () => {
         classification,
       };
       setSlidesWithContent(updated);
+      toast.success('Content classified successfully!');
     } catch (error) {
       console.error('분류 실패:', error);
-      alert('콘텐츠 분류에 실패했습니다.');
+      toast.error('Failed to classify content. Please try again.');
     } finally {
       setIsClassifying(false);
     }
@@ -100,7 +110,7 @@ const SlideEditPage: React.FC = () => {
   // AI 콘텐츠 생성
   const handleGenerateContent = async () => {
     if (!currentSlide || !currentSlide.classification) {
-      alert('먼저 콘텐츠 분류를 실행해주세요.');
+      toast.warning('Please classify content first.');
       return;
     }
 
@@ -135,9 +145,11 @@ const SlideEditPage: React.FC = () => {
           status: 'ai_generated',
         });
       }
+      
+      toast.success('AI content generated successfully!');
     } catch (error) {
       console.error('콘텐츠 생성 실패:', error);
-      alert('콘텐츠 생성에 실패했습니다.');
+      toast.error('Failed to generate content. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -186,8 +198,10 @@ const SlideEditPage: React.FC = () => {
     return (
       <div className="slide-edit-page">
         <div className="error-message">
-          <p>슬라이드 정보가 없습니다.</p>
-          <button onClick={() => navigate('/storyline')}>스토리라인 생성하기</button>
+          <p>No slide data found. Please start from storyline generation.</p>
+          <Button variant="primary" onClick={() => navigate('/storyline')}>
+            Go to Storyline Generator
+          </Button>
         </div>
       </div>
     );
@@ -196,79 +210,133 @@ const SlideEditPage: React.FC = () => {
   return (
     <div className="slide-edit-page">
       <div className="edit-header">
-        <h1>슬라이드 편집</h1>
-        <p>콘텐츠를 분류하고 AI로 자동 생성하거나 직접 입력하세요</p>
+        <div className="header-content">
+          <h1>Slide Content Editor</h1>
+          <p>Classify content and generate with AI or input manually</p>
+        </div>
+        <ProgressSteps 
+          steps={workflowSteps}
+          currentStep={3}
+          completedSteps={[1, 2]}
+        />
         <div className="progress-indicator">
-          슬라이드 {currentSlideIndex + 1} / {slidesWithContent.length || slides.length}
+          Slide {currentSlideIndex + 1} of {slidesWithContent.length || slides.length}
+          {currentSlide.content && <span className="status-badge completed">✓ Generated</span>}
         </div>
       </div>
 
       <div className="edit-content">
-        {/* 좌측: 슬라이드 미리보기 */}
+        {/* 좌측: 슬라이드 미리보기 - PPT처럼 보이도록 */}
         <div className="preview-panel">
-          <div className="preview-card">
-            <div className="slide-header-info">
-              <div className="slide-number">슬라이드 {currentSlide.order}</div>
-              <div className="template-badge">{currentSlide.template_type}</div>
-            </div>
-            <h2>{currentSlide.head_message}</h2>
-            {currentSlide.slide_purpose && (
-              <p className="purpose">{currentSlide.slide_purpose}</p>
-            )}
+          <div className="preview-container">
+            <div className="ppt-slide">
+              {/* 슬라이드 헤더 */}
+              <div className="ppt-slide-header">
+                <div className="slide-number-badge">Slide {currentSlide.order}</div>
+                <div className="template-type-badge">{currentSlide.template_type.replace('_', ' ')}</div>
+              </div>
 
-            {/* 생성된 콘텐츠 미리보기 */}
-            {currentSlide.content && (
-              <div className="content-preview">
-                {currentSlide.content.title && (
-                  <div className="preview-item">
-                    <strong>제목:</strong> {currentSlide.content.title}
-                  </div>
+              {/* 슬라이드 메인 콘텐츠 */}
+              <div className="ppt-slide-body">
+                <h1 className="ppt-title">{currentSlide.head_message}</h1>
+                
+                {currentSlide.slide_purpose && (
+                  <p className="ppt-subtitle">{currentSlide.slide_purpose}</p>
                 )}
-                {currentSlide.content.sub_message && (
-                  <div className="preview-item">
-                    <strong>서브메시지:</strong> {currentSlide.content.sub_message}
+
+                {/* AI 생성 콘텐츠 표시 */}
+                {currentSlide.content ? (
+                  <div className="ppt-content">
+                    {currentSlide.content.title && (
+                      <div className="content-section">
+                        <h2 className="content-title">{currentSlide.content.title}</h2>
+                      </div>
+                    )}
+                    
+                    {currentSlide.content.sub_message && (
+                      <div className="content-section">
+                        <p className="sub-message">{currentSlide.content.sub_message}</p>
+                      </div>
+                    )}
+                    
+                    {currentSlide.content.bullet_points && currentSlide.content.bullet_points.length > 0 && (
+                      <div className="content-section bullets">
+                        <ul className="ppt-bullets">
+                          {currentSlide.content.bullet_points.map((point: string, i: number) => (
+                            <li key={i}>{point}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {currentSlide.content.insight_box && (
+                      <div className="content-section insight">
+                        <div className="insight-box">
+                          <div className="insight-icon">💡</div>
+                          <div className="insight-text">{currentSlide.content.insight_box}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentSlide.content.evidence_block && (
+                      <div className="content-section evidence">
+                        <div className="evidence-box">
+                          <div className="evidence-label">Evidence</div>
+                          <div className="evidence-text">{currentSlide.content.evidence_block}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentSlide.content.action_guide && (
+                      <div className="content-section action">
+                        <div className="action-box">
+                          <div className="action-icon">→</div>
+                          <div className="action-text">{currentSlide.content.action_guide}</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-                {currentSlide.content.bullet_points && (
-                  <div className="preview-item">
-                    <strong>불릿 포인트:</strong>
-                    <ul>
-                      {currentSlide.content.bullet_points.map((point: string, i: number) => (
-                        <li key={i}>{point}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {currentSlide.content.insight_box && (
-                  <div className="preview-item highlight">
-                    <strong>인사이트:</strong> {currentSlide.content.insight_box}
+                ) : (
+                  <div className="ppt-empty-state">
+                    <div className="empty-icon">📄</div>
+                    <p>No content generated yet</p>
+                    <p className="empty-hint">Classify and generate content on the right panel</p>
                   </div>
                 )}
               </div>
-            )}
+
+              {/* 슬라이드 푸터 */}
+              <div className="ppt-slide-footer">
+                <div className="footer-left">PPT Pro</div>
+                <div className="footer-right">{currentSlideIndex + 1}</div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* 우측: 콘텐츠 패널 */}
         <div className="content-panel">
           <div className="panel-section">
-            <h3>콘텐츠 관리</h3>
+            <h3>Content Management</h3>
             
             {/* 분류 버튼 */}
-            <button
-              className="action-button classify-button"
+            <Button
               onClick={handleClassify}
               disabled={isClassifying || !!currentSlide.classification}
+              loading={isClassifying}
+              variant={currentSlide.classification ? 'success' : 'primary'}
+              size="large"
+              className="action-button"
             >
-              {isClassifying ? '분류 중...' : currentSlide.classification ? '✓ 분류 완료' : '콘텐츠 분류하기'}
-            </button>
+              {currentSlide.classification ? '✓ Classification Complete' : 'Classify Content'}
+            </Button>
 
             {/* 분류 결과 표시 */}
             {currentSlide.classification && (
               <div className="classification-results">
                 <div className="user-needed-section">
                   <h4 className="section-title user-needed">USER_NEEDED</h4>
-                  <p className="section-description">사용자가 직접 입력해야 하는 요소들</p>
+                  <p className="section-description">Elements that require manual user input</p>
                   {currentSlide.classification.user_needed.map((elem: any, i: number) => (
                     <div key={i} className="element-card user-needed-card">
                       <div className="element-header">
@@ -278,7 +346,7 @@ const SlideEditPage: React.FC = () => {
                       <p>{elem.description}</p>
                       <small>{elem.reason}</small>
                       <textarea
-                        placeholder="여기에 내용을 입력하세요..."
+                        placeholder="Enter content here..."
                         className="user-input"
                         rows={3}
                         onChange={(e) => handleUserInput(elem.element_type, e.target.value)}
@@ -289,7 +357,7 @@ const SlideEditPage: React.FC = () => {
 
                 <div className="ai-generated-section">
                   <h4 className="section-title ai-generated">AI_GENERATED</h4>
-                  <p className="section-description">AI가 자동으로 생성 가능한 요소들</p>
+                  <p className="section-description">Elements that AI can generate automatically</p>
                   {currentSlide.classification.ai_generated.map((elem: any, i: number) => (
                     <div key={i} className="element-card ai-generated-card">
                       <div className="element-header">
@@ -303,13 +371,16 @@ const SlideEditPage: React.FC = () => {
                 </div>
 
                 {/* AI 생성 버튼 */}
-                <button
-                  className="action-button generate-button"
+                <Button
                   onClick={handleGenerateContent}
                   disabled={isGenerating || !!currentSlide.content}
+                  loading={isGenerating}
+                  variant={currentSlide.content ? 'success' : 'primary'}
+                  size="large"
+                  className="action-button generate-button"
                 >
-                  {isGenerating ? 'AI 생성 중...' : currentSlide.content ? '✓ 생성 완료' : 'AI 자동 채움'}
-                </button>
+                  {currentSlide.content ? '✓ Content Generated' : 'Generate AI Content'}
+                </Button>
               </div>
             )}
           </div>
@@ -318,21 +389,23 @@ const SlideEditPage: React.FC = () => {
 
       {/* 네비게이션 */}
       <div className="edit-navigation">
-        <button
-          className="nav-button previous"
+        <Button
           onClick={handlePrevious}
           disabled={currentSlideIndex === 0}
+          variant="secondary"
+          size="large"
         >
-          이전 슬라이드
-        </button>
-        <button
-          className="nav-button next"
+          ← Previous Slide
+        </Button>
+        <Button
           onClick={handleNext}
+          variant="primary"
+          size="large"
         >
           {currentSlideIndex === (slidesWithContent.length || slides.length) - 1
-            ? 'PPT 생성하기'
-            : '다음 슬라이드'}
-        </button>
+            ? 'Generate PPT →'
+            : 'Next Slide →'}
+        </Button>
       </div>
 
       {(isLoading || isClassifying || isGenerating) && <LoadingSpinner />}
