@@ -194,6 +194,213 @@ const SlideEditPage: React.FC = () => {
     }
   };
 
+  const renderTemplatePreview = () => {
+    if (!currentSlide || !currentSlide.content) {
+      return (
+        <div className="ppt-empty-state">
+          <div className="empty-icon">📄</div>
+          <p>No content generated yet</p>
+          <p className="empty-hint">Classify and generate content on the right panel</p>
+        </div>
+      );
+    }
+
+    const payload = currentSlide.content.ppt_payload || currentSlide.content;
+
+    switch (currentSlide.template_type) {
+      case 'message_only': {
+        return (
+          <div className="ppt-content">
+            {payload.main_message && (
+              <div className="content-section">
+                <h2 className="content-title">{payload.main_message}</h2>
+              </div>
+            )}
+
+            {payload.supporting_points && payload.supporting_points.length > 0 && (
+              <div className="content-section bullets">
+                <ul className="ppt-bullets">
+                  {payload.supporting_points.map((point: string, index: number) => (
+                    <li key={index}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {payload.call_to_action && (
+              <div className="content-section action">
+                <div className="action-box">
+                  <div className="action-icon">→</div>
+                  <div className="action-text">{payload.call_to_action}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+      case 'asis_tobe': {
+        return (
+          <div className="ppt-content two-column">
+            <div className="column-block">
+              <h2>{payload.as_is_title || 'As-Is'}</h2>
+              <ul className="ppt-bullets">
+                {(payload.as_is_points || []).map((point: string, index: number) => (
+                  <li key={index}>{point}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="column-block">
+              <h2>{payload.to_be_title || 'To-Be'}</h2>
+              <ul className="ppt-bullets">
+                {(payload.to_be_points || []).map((point: string, index: number) => (
+                  <li key={index}>{point}</li>
+                ))}
+              </ul>
+            </div>
+            {payload.transition_method && (
+              <div className="content-section action">
+                <div className="action-box">
+                  <div className="action-icon">⇢</div>
+                  <div className="action-text">{payload.transition_method}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+      case 'case_box': {
+        return (
+          <div className="ppt-content case-grid">
+            {(payload.cases || []).map((item: Record<string, any>, index: number) => (
+              <div key={index} className="case-card">
+                <h3>{item.title || `Case ${index + 1}`}</h3>
+                {item.description && <p>{item.description}</p>}
+                {(item.pros || item.cons) && (
+                  <div className="case-details">
+                    {item.pros && item.pros.length > 0 && (
+                      <div>
+                        <strong>Pros</strong>
+                        <ul>
+                          {item.pros.map((pro: string, i: number) => (
+                            <li key={i}>{pro}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {item.cons && item.cons.length > 0 && (
+                      <div>
+                        <strong>Cons</strong>
+                        <ul>
+                          {item.cons.map((con: string, i: number) => (
+                            <li key={i}>{con}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {item.recommendation && (
+                  <div className="recommendation">{item.recommendation}</div>
+                )}
+              </div>
+            ))}
+
+            {payload.insight_box && (
+              <div className="insight-box">
+                <div className="insight-icon">💡</div>
+                <div className="insight-text">{payload.insight_box}</div>
+              </div>
+            )}
+          </div>
+        );
+      }
+      case 'step_flow': {
+        return (
+          <div className="ppt-content step-flow">
+            {(payload.steps || []).map((step: Record<string, any>, index: number) => (
+              <div key={index} className="step-item">
+                <div className="step-number">{step.order || index + 1}</div>
+                <div className="step-content">
+                  <strong>{step.title || `Step ${index + 1}`}</strong>
+                  {step.description && <p>{step.description}</p>}
+                </div>
+              </div>
+            ))}
+            {payload.action_guide && (
+              <div className="action-box">
+                <div className="action-icon">🧭</div>
+                <div className="action-text">{payload.action_guide}</div>
+              </div>
+            )}
+          </div>
+        );
+      }
+      case 'chart_insight': {
+        return (
+          <div className="ppt-content chart-insight">
+            <div className="chart-placeholder">
+              <span>{payload.chart_title || 'Data Insight'}</span>
+              <small>{payload.chart_type || 'Chart'}</small>
+              <p>{payload.data_source || 'USER_NEEDED'}</p>
+            </div>
+            <div className="insight-list">
+              <h3>Key Insights</h3>
+              <ul>
+                {(payload.key_insights || []).map((insight: string, index: number) => (
+                  <li key={index}>{insight}</li>
+                ))}
+              </ul>
+              {payload.insight_box && <p className="insight-summary">{payload.insight_box}</p>}
+            </div>
+          </div>
+        );
+      }
+      case 'node_map': {
+        return (
+          <div className="ppt-content node-map">
+            <div className="central-node">{payload.central_concept || 'Central Concept'}</div>
+            <div className="node-grid">
+              {(payload.primary_nodes || []).map((node: string, index: number) => (
+                <div key={index} className="node-item">{node}</div>
+              ))}
+            </div>
+            {payload.insight_box && (
+              <div className="insight-box">
+                <div className="insight-icon">💡</div>
+                <div className="insight-text">{payload.insight_box}</div>
+              </div>
+            )}
+          </div>
+        );
+      }
+      default: {
+        return (
+          <div className="ppt-content">
+            {currentSlide.content.title && (
+              <div className="content-section">
+                <h2 className="content-title">{currentSlide.content.title}</h2>
+              </div>
+            )}
+            {currentSlide.content.sub_message && (
+              <div className="content-section">
+                <p className="sub-message">{currentSlide.content.sub_message}</p>
+              </div>
+            )}
+            {currentSlide.content.bullet_points && (
+              <div className="content-section bullets">
+                <ul className="ppt-bullets">
+                  {currentSlide.content.bullet_points.map((point: string, index: number) => (
+                    <li key={index}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+  };
+
   if (slides.length === 0) {
     return (
       <div className="slide-edit-page">
@@ -245,64 +452,7 @@ const SlideEditPage: React.FC = () => {
                 )}
 
                 {/* AI 생성 콘텐츠 표시 */}
-                {currentSlide.content ? (
-                  <div className="ppt-content">
-                    {currentSlide.content.title && (
-                      <div className="content-section">
-                        <h2 className="content-title">{currentSlide.content.title}</h2>
-                      </div>
-                    )}
-                    
-                    {currentSlide.content.sub_message && (
-                      <div className="content-section">
-                        <p className="sub-message">{currentSlide.content.sub_message}</p>
-                      </div>
-                    )}
-                    
-                    {currentSlide.content.bullet_points && currentSlide.content.bullet_points.length > 0 && (
-                      <div className="content-section bullets">
-                        <ul className="ppt-bullets">
-                          {currentSlide.content.bullet_points.map((point: string, i: number) => (
-                            <li key={i}>{point}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {currentSlide.content.insight_box && (
-                      <div className="content-section insight">
-                        <div className="insight-box">
-                          <div className="insight-icon">💡</div>
-                          <div className="insight-text">{currentSlide.content.insight_box}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {currentSlide.content.evidence_block && (
-                      <div className="content-section evidence">
-                        <div className="evidence-box">
-                          <div className="evidence-label">Evidence</div>
-                          <div className="evidence-text">{currentSlide.content.evidence_block}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {currentSlide.content.action_guide && (
-                      <div className="content-section action">
-                        <div className="action-box">
-                          <div className="action-icon">→</div>
-                          <div className="action-text">{currentSlide.content.action_guide}</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="ppt-empty-state">
-                    <div className="empty-icon">📄</div>
-                    <p>No content generated yet</p>
-                    <p className="empty-hint">Classify and generate content on the right panel</p>
-                  </div>
-                )}
+                {renderTemplatePreview()}
               </div>
 
               {/* 슬라이드 푸터 */}

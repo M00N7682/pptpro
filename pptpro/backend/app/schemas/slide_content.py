@@ -1,7 +1,7 @@
 """
 Slide content generation schemas
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 
 
@@ -35,6 +35,9 @@ class SlideContentGenerationRequest(BaseModel):
 
 class SlideComponents(BaseModel):
     """생성된 슬라이드 컴포넌트"""
+
+    model_config = ConfigDict(extra="allow")
+
     title: Optional[str] = Field(None, description="슬라이드 제목")
     sub_message: Optional[str] = Field(None, description="서브 메시지")
     bullet_points: Optional[List[str]] = Field(None, description="불릿 포인트 리스트")

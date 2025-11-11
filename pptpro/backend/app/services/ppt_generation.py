@@ -444,7 +444,9 @@ class PPTGenerationService:
         # 템플릿별 렌더링
         render_method = self.template_renderers.get(slide_data.template_type)
         if render_method:
-            render_method(renderer, slide, slide_data.content)
+            content_payload = slide_data.content.get("ppt_payload") if isinstance(slide_data.content, dict) else None
+            render_source = content_payload or slide_data.content
+            render_method(renderer, slide, render_source)
         else:
             # 기본 렌더링
             renderer.render_message_only(slide, {
