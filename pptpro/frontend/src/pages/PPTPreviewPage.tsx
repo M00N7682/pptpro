@@ -2,9 +2,10 @@
  * PPT Preview & Download Page - Page 5
  * 최종 렌더링 결과 미리보기 및 다운로드
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { pptApi } from '../api/ppt';
+import type { AxiosError } from 'axios';
+import { pptApi, type PPTPreviewInfo } from '../api/ppt';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import './PPTPreviewPage.css';
 
@@ -13,39 +14,41 @@ const PPTPreviewPage: React.FC = () => {
   const location = useLocation();
   const projectId: string = location.state?.projectId || '';
 
-  const [previewInfo, setPreviewInfo] = useState<any>(null);
+  const [previewInfo, setPreviewInfo] = useState<PPTPreviewInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  useEffect(() => {
-    if (projectId) {
-      loadPreviewInfo();
-    }
-  }, [projectId]);
-
-  const loadPreviewInfo = async () => {
+  const loadPreviewInfo = useCallback(async () => {
     setIsLoading(true);
     try {
       const info = await pptApi.getPPTPreview(projectId);
       setPreviewInfo(info);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('미리보기 정보 로드 실패:', error);
       alert('프로젝트 정보를 불러오는데 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    if (projectId) {
+      void loadPreviewInfo();
+    }
+  }, [projectId, loadPreviewInfo]);
 
   const handleDownload = async (includeEmpty: boolean = false) => {
     setIsDownloading(true);
     try {
       const blob = await pptApi.generatePPT(projectId, includeEmpty);
-      const filename = `${previewInfo.project.title}_${new Date().toISOString().split('T')[0]}.pptx`;
+      const projectTitle = previewInfo?.project.title ?? 'pptpro';
+      const filename = `${projectTitle}_${new Date().toISOString().split('T')[0]}.pptx`;
       pptApi.downloadPPT(blob, filename);
       alert('PPT 파일이 다운로드되었습니다!');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError<{ detail?: string }>;
       console.error('PPT 다운로드 실패:', error);
-      alert(error.response?.data?.detail || 'PPT 다운로드에 실패했습니다.');
+      alert(axiosError.response?.data?.detail || 'PPT 다운로드에 실패했습니다.');
     } finally {
       setIsDownloading(false);
     }
@@ -126,7 +129,7 @@ const PPTPreviewPage: React.FC = () => {
           <div className="slides-preview-card">
             <h3>슬라이드 구성</h3>
             <div className="slides-preview-list">
-              {previewInfo.slides.map((slide: any, index: number) => (
+              {previewInfo.slides.map((slide, index) => (
                 <div 
                   key={index} 
                   className={`slide-preview-item ${slide.has_content ? 'has-content' : 'empty'}`}
@@ -199,7 +202,7 @@ const PPTPreviewPage: React.FC = () => {
               onClick={() => navigate('/slide-edit', {
                 state: {
                   projectId,
-                  slides: previewInfo.slides.map((s: any) => ({
+                  slides: previewInfo.slides.map((s) => ({
                     order: s.order,
                     head_message: s.head_message,
                     template_type: s.template_type,

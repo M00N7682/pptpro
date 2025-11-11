@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import type { AxiosError } from 'axios';
 import { createProject, listProjects, deleteProject } from '../api/projects';
 import { useNavigate } from 'react-router-dom';
 import { Button, LoadingSpinner } from '../components/ui';
@@ -17,8 +18,9 @@ const ProjectsPage: React.FC = () => {
     try {
       const res = await listProjects();
       setProjects(res);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load projects');
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ detail?: string }>;
+      setError(axiosError.response?.data?.detail || 'Failed to load projects');
     } finally {
       setLoading(false);
     }
@@ -34,8 +36,9 @@ const ProjectsPage: React.FC = () => {
       const p = await createProject({ title });
       setProjects((s) => [p, ...s]);
       setTitle('');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Create failed');
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ detail?: string }>;
+      setError(axiosError.response?.data?.detail || 'Create failed');
     } finally {
       setLoading(false);
     }
@@ -46,7 +49,7 @@ const ProjectsPage: React.FC = () => {
     try {
       await deleteProject(id);
       setProjects((s) => s.filter((p) => p.id !== id));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
       alert('Delete failed');
     }

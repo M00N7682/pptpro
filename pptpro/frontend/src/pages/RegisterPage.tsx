@@ -1,5 +1,6 @@
 // 회원가입 페이지
 import React, { useState } from 'react';
+import type { AxiosError } from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../api/auth';
 import { useAuthStore } from '../stores/authStore';
@@ -23,8 +24,9 @@ const RegisterPage: React.FC = () => {
       const response = await register({ email, password, name });
       setAuth(response.user, response.access_token, response.refresh_token);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed');
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ detail?: string }>;
+      setError(axiosError.response?.data?.detail || 'Registration failed');
     } finally {
       setLoading(false);
     }

@@ -6,14 +6,14 @@ export interface ContentGenerateRequest {
 }
 
 export interface ContentUpdateRequest {
-  content: Record<string, any>;
+  content: Record<string, unknown>;
   user_completed_fields?: string[];
 }
 
 export interface ContentResponse {
   slide_id: string;
   template_type: string;
-  content: Record<string, any>;
+  content: Record<string, unknown>;
   user_needed_items: string[];
   generation_notes: string;
   status: string;

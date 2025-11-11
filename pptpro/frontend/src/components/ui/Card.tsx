@@ -48,7 +48,13 @@ const CardFooter: React.FC<CardFooterProps> = ({ children, className = '' }) => 
   );
 };
 
-const Card = ({
+type CardComponent = React.FC<CardProps> & {
+  Header: typeof CardHeader;
+  Body: typeof CardBody;
+  Footer: typeof CardFooter;
+};
+
+const Card: CardComponent = ({
   children,
   className = '',
   hoverable = false,
@@ -70,8 +76,8 @@ const Card = ({
   );
 };
 
-(Card as any).Header = CardHeader;
-(Card as any).Body = CardBody;
-(Card as any).Footer = CardFooter;
+Card.Header = CardHeader;
+Card.Body = CardBody;
+Card.Footer = CardFooter;
 
 export default Card;

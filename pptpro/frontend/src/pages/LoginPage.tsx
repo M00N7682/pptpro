@@ -1,5 +1,6 @@
 // 로그인 페이지
 import React, { useState } from 'react';
+import type { AxiosError } from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { login } from '../api/auth';
 import { useAuthStore } from '../stores/authStore';
@@ -22,8 +23,9 @@ const LoginPage: React.FC = () => {
       const response = await login({ email, password });
       setAuth(response.user, response.access_token, response.refresh_token);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed');
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<{ detail?: string }>;
+      setError(axiosError.response?.data?.detail || 'Login failed');
     } finally {
       setLoading(false);
     }

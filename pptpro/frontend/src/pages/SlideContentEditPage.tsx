@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { contentApi } from '../api/content';
 import { slidesApi } from '../api/slides';
-import type { ContentResponse, TemplateFieldsResponse } from '../api/content';
+import type { ContentResponse, TemplateFieldsResponse, TemplateField } from '../api/content';
 import type { Slide } from '../api/slides';
 
 const SlideContentEditPage: React.FC = () => {
@@ -11,43 +11,44 @@ const SlideContentEditPage: React.FC = () => {
   const [slide, setSlide] = useState<Slide | null>(null);
   const [content, setContent] = useState<ContentResponse | null>(null);
   const [templateFields, setTemplateFields] = useState<TemplateFieldsResponse | null>(null);
-  const [editedContent, setEditedContent] = useState<Record<string, any>>({});
+  const [editedContent, setEditedContent] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const loadData = useCallback(async () => {
+    if (!slideId) return;
+
+    setLoading(true);
+    try {
+      const [slideData, contentData] = await Promise.all([
+        slidesApi.getSlide(slideId),
+        contentApi.getSlideContent(slideId).catch(() => null), // 콘텐츠가 없을 수도 있음
+      ]);
+
+      setSlide(slideData);
+      setContent(contentData);
+      setEditedContent((contentData?.content as Record<string, unknown>) || {});
+
+      if (slideData.template_type) {
+        const fields = await contentApi.getTemplateFields(slideData.template_type);
+        setTemplateFields(fields);
+      }
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+      setError(message || 'Failed to load slide data');
+    } finally {
+      setLoading(false);
+    }
+  }, [slideId]);
 
   useEffect(() => {
     if (!slideId || !projectId) {
       navigate(`/projects/${projectId}/slides`);
       return;
     }
-    loadData();
-  }, [slideId, projectId]);
-
-  const loadData = async () => {
-    if (!slideId) return;
-    
-    setLoading(true);
-    try {
-      const [slideData, contentData] = await Promise.all([
-        slidesApi.getSlide(slideId),
-        contentApi.getSlideContent(slideId).catch(() => null) // 콘텐츠가 없을 수도 있음
-      ]);
-      
-      setSlide(slideData);
-      setContent(contentData);
-      setEditedContent(contentData?.content || {});
-      
-      if (slideData.template_type) {
-        const fields = await contentApi.getTemplateFields(slideData.template_type);
-        setTemplateFields(fields);
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load slide data');
-    } finally {
-      setLoading(false);
-    }
-  };
+    void loadData();
+  }, [slideId, projectId, navigate, loadData]);
 
   const handleGenerateContent = async () => {
     if (!slideId) return;
@@ -61,7 +62,8 @@ const SlideContentEditPage: React.FC = () => {
       setContent(result);
       setEditedContent(result.content);
     } catch (err: any) {
-      alert(err.response?.data?.detail || '콘텐츠 생성에 실패했습니다');
+      const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+      alert(message || '콘텐츠 생성에 실패했습니다');
     } finally {
       setSaving(false);
     }
@@ -79,20 +81,21 @@ const SlideContentEditPage: React.FC = () => {
       setContent(result);
       alert('저장되었습니다');
     } catch (err: any) {
-      alert(err.response?.data?.detail || '저장에 실패했습니다');
+      const message = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
+      alert(message || '저장에 실패했습니다');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleFieldChange = (fieldName: string, value: any) => {
+  const handleFieldChange = (fieldName: string, value: unknown) => {
     setEditedContent(prev => ({
       ...prev,
       [fieldName]: value
     }));
   };
 
-  const renderField = (field: any, fieldName: string, value: any) => {
+  const renderField = (field: TemplateField, fieldName: string, value: unknown) => {
     const isUserNeeded = typeof value === 'string' && value.includes('USER_NEEDED');
     
     switch (field.type) {
@@ -120,8 +123,8 @@ const SlideContentEditPage: React.FC = () => {
           </div>
         );
 
-      case 'array':
-        const arrayValue = Array.isArray(value) ? value : [];
+      case 'array': {
+        const arrayValue = Array.isArray(value) ? (value as string[]) : [];
         return (
           <div key={fieldName} className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -144,7 +147,7 @@ const SlideContentEditPage: React.FC = () => {
                   />
                   <button
                     onClick={() => {
-                      const newArray = arrayValue.filter((_: any, i: number) => i !== index);
+                      const newArray = arrayValue.filter((_, i) => i !== index);
                       handleFieldChange(fieldName, newArray);
                     }}
                     className="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200"
@@ -165,6 +168,7 @@ const SlideContentEditPage: React.FC = () => {
             </div>
           </div>
         );
+      }
 
       default:
         return (

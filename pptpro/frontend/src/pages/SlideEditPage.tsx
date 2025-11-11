@@ -3,10 +3,16 @@
  * 슬라이드 미리보기(좌측) + 콘텐츠 패널(우측)
  * USER_NEEDED / AI_GENERATED 구분 표시
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { slidesApi } from '../api/slides';
-import { slideContentApi } from '../api/slideContent';
+import {
+  slideContentApi,
+  type SlideClassificationResponse,
+  type SlideComponents,
+  type CaseBoxItem,
+  type StepItem,
+} from '../api/slideContent';
 import { Button, LoadingSpinner, ProgressSteps, useToast } from '../components/ui';
 import './SlideEditPage.css';
 
@@ -19,16 +25,19 @@ interface SlideData {
 
 interface SlideWithContent extends SlideData {
   id?: string;
-  classification?: any;
-  content?: any;
+  classification?: SlideClassificationResponse;
+  content?: SlideComponents;
 }
 
 const SlideEditPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
-  const slides: SlideData[] = location.state?.slides || [];
-  const projectId: string = location.state?.projectId || '';
+  const locationState = location.state as { slides?: SlideData[]; projectId?: string } | undefined;
+  const slidesRef = useRef<SlideData[]>(locationState?.slides ?? []);
+  const projectIdRef = useRef<string>(locationState?.projectId ?? '');
+  const slides: SlideData[] = slidesRef.current;
+  const projectId: string = projectIdRef.current;
 
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [slidesWithContent, setSlidesWithContent] = useState<SlideWithContent[]>([]);
@@ -38,29 +47,22 @@ const SlideEditPage: React.FC = () => {
 
   const currentSlide = slidesWithContent[currentSlideIndex] || slides[currentSlideIndex];
 
-  const workflowSteps = [
+  const workflowSteps = useMemo(() => [
     { label: 'Storyline', description: 'Create structure' },
     { label: 'Templates', description: 'Select design' },
     { label: 'Content', description: 'Edit slides' },
     { label: 'Export', description: 'Download PPT' },
-  ];
+  ], []);
 
-  useEffect(() => {
-    // 초기화: slides를 slidesWithContent로 변환
-    if (slides.length > 0 && slidesWithContent.length === 0) {
-      createSlidesInBackend();
-    }
-  }, [slides]);
-
-  // 백엔드에 슬라이드 생성
-  const createSlidesInBackend = async () => {
+  const createSlidesInBackend = useCallback(async () => {
     setIsLoading(true);
     try {
       const createdSlides: SlideWithContent[] = [];
-      
-      for (const slide of slides) {
+      const slidesToCreate = slidesRef.current;
+
+      for (const slide of slidesToCreate) {
         const created = await slidesApi.createSlide({
-          project_id: projectId,
+          project_id: projectIdRef.current,
           order: slide.order,
           head_message: slide.head_message,
           template_type: slide.template_type,
@@ -71,13 +73,20 @@ const SlideEditPage: React.FC = () => {
       
       setSlidesWithContent(createdSlides);
       toast.success(`${createdSlides.length} slides created successfully!`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('슬라이드 생성 실패:', error);
       toast.error('Failed to create slides. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    // 초기화: slides를 slidesWithContent로 변환
+    if (slidesRef.current.length > 0 && slidesWithContent.length === 0) {
+      void createSlidesInBackend();
+    }
+  }, [slidesWithContent.length, createSlidesInBackend]);
 
   // USER_NEEDED / AI_GENERATED 분류
   const handleClassify = async () => {
@@ -99,7 +108,7 @@ const SlideEditPage: React.FC = () => {
       };
       setSlidesWithContent(updated);
       toast.success('Content classified successfully!');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('분류 실패:', error);
       toast.error('Failed to classify content. Please try again.');
     } finally {
@@ -117,7 +126,7 @@ const SlideEditPage: React.FC = () => {
     setIsGenerating(true);
     try {
       const aiElements = currentSlide.classification.ai_generated.map(
-        (elem: any) => elem.element_type
+        (elem) => elem.element_type
       );
 
       const generatedContent = await slideContentApi.generateContent({
@@ -131,12 +140,14 @@ const SlideEditPage: React.FC = () => {
       });
 
       // 생성된 콘텐츠 저장
-      const updated = [...slidesWithContent];
-      updated[currentSlideIndex] = {
-        ...currentSlide,
-        content: generatedContent.components,
-      };
-      setSlidesWithContent(updated);
+      setSlidesWithContent((prev) => {
+        const updated = [...prev];
+        updated[currentSlideIndex] = {
+          ...currentSlide,
+          content: generatedContent.components,
+        };
+        return updated;
+      });
 
       // 백엔드 슬라이드 업데이트
       if (currentSlide.id) {
@@ -147,7 +158,7 @@ const SlideEditPage: React.FC = () => {
       }
       
       toast.success('AI content generated successfully!');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('콘텐츠 생성 실패:', error);
       toast.error('Failed to generate content. Please try again.');
     } finally {
@@ -156,21 +167,29 @@ const SlideEditPage: React.FC = () => {
   };
 
   // 사용자 입력 저장
-  const handleUserInput = async (field: string, value: any) => {
-    const updated = [...slidesWithContent];
-    updated[currentSlideIndex] = {
-      ...currentSlide,
-      content: {
-        ...currentSlide.content,
-        [field]: value,
-      },
+  const handleUserInput = async (field: string, value: unknown) => {
+    if (!currentSlide) {
+      return;
+    }
+
+    const nextContent: SlideComponents = {
+      ...(currentSlide.content ?? {}),
+      [field]: value,
     };
-    setSlidesWithContent(updated);
+
+    setSlidesWithContent((prev) => {
+      const updated = [...prev];
+      updated[currentSlideIndex] = {
+        ...currentSlide,
+        content: nextContent,
+      };
+      return updated;
+    });
 
     // 백엔드 업데이트
     if (currentSlide.id) {
       await slidesApi.updateSlide(currentSlide.id, {
-        content: updated[currentSlideIndex].content,
+        content: nextContent,
         status: 'user_completed',
       });
     }
@@ -205,7 +224,7 @@ const SlideEditPage: React.FC = () => {
       );
     }
 
-    const payload = currentSlide.content.ppt_payload || currentSlide.content;
+  const payload = (currentSlide.content.ppt_payload ?? currentSlide.content) as SlideComponents;
 
     switch (currentSlide.template_type) {
       case 'message_only': {
@@ -271,7 +290,7 @@ const SlideEditPage: React.FC = () => {
       case 'case_box': {
         return (
           <div className="ppt-content case-grid">
-            {(payload.cases || []).map((item: Record<string, any>, index: number) => (
+            {(payload.cases || []).map((item: CaseBoxItem, index: number) => (
               <div key={index} className="case-card">
                 <h3>{item.title || `Case ${index + 1}`}</h3>
                 {item.description && <p>{item.description}</p>}
@@ -317,7 +336,7 @@ const SlideEditPage: React.FC = () => {
       case 'step_flow': {
         return (
           <div className="ppt-content step-flow">
-            {(payload.steps || []).map((step: Record<string, any>, index: number) => (
+            {(payload.steps || []).map((step: StepItem, index: number) => (
               <div key={index} className="step-item">
                 <div className="step-number">{step.order || index + 1}</div>
                 <div className="step-content">
@@ -337,7 +356,7 @@ const SlideEditPage: React.FC = () => {
       }
       case 'chart_insight': {
         return (
-          <div className="ppt-content chart-insight">
+            <div className="ppt-content chart-insight">
             <div className="chart-placeholder">
               <span>{payload.chart_title || 'Data Insight'}</span>
               <small>{payload.chart_type || 'Chart'}</small>
@@ -487,7 +506,7 @@ const SlideEditPage: React.FC = () => {
                 <div className="user-needed-section">
                   <h4 className="section-title user-needed">USER_NEEDED</h4>
                   <p className="section-description">Elements that require manual user input</p>
-                  {currentSlide.classification.user_needed.map((elem: any, i: number) => (
+                  {currentSlide.classification.user_needed.map((elem, i) => (
                     <div key={i} className="element-card user-needed-card">
                       <div className="element-header">
                         <strong>{elem.element_type}</strong>
@@ -508,7 +527,7 @@ const SlideEditPage: React.FC = () => {
                 <div className="ai-generated-section">
                   <h4 className="section-title ai-generated">AI_GENERATED</h4>
                   <p className="section-description">Elements that AI can generate automatically</p>
-                  {currentSlide.classification.ai_generated.map((elem: any, i: number) => (
+                  {currentSlide.classification.ai_generated.map((elem, i) => (
                     <div key={i} className="element-card ai-generated-card">
                       <div className="element-header">
                         <strong>{elem.element_type}</strong>

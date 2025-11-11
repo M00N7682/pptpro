@@ -7,7 +7,7 @@ export interface Slide {
   head_message: string;
   template_type: string;
   purpose: string;
-  content: Record<string, any>;
+  content: Record<string, unknown>;
   status: string;
   created_at: string;
   updated_at: string;
@@ -25,7 +25,7 @@ export interface SlideUpdateRequest {
   head_message?: string;
   template_type?: string;
   purpose?: string;
-  content?: Record<string, any>;
+  content?: Record<string, unknown>;
   status?: string;
 }
 

@@ -15,6 +15,7 @@ export interface PPTPreviewInfo {
     status: string;
     has_content: boolean;
     content_summary?: string;
+    purpose?: string;
   }>;
   summary: {
     total_slides: number;
